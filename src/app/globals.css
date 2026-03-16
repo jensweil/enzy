@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-teal: #007c91;
+  --color-brand-dark: #003a4d;
+  --color-brand-cyan: #00b4d8;
+  --color-brand-light: #e0f7fa;
+  --color-brand-accent: #0288d1;
+}
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #0f172a; /* Sleek dark slate */
+      --foreground: #f8fafc; /* Crisp white-gray */
+    }
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply transition-colors duration-300 antialiased;
+  }
+}
+
+@layer utilities {
+  .glassmorphism {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800 shadow-xl;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-teal to-brand-cyan;
+  }
+}

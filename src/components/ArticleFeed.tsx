@@ -1,0 +1,1059 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import Image from "next/image";
+
+type Article = {
+  id: string;
+  title: string;
+  type: string;
+  date: string;
+  imageUrl?: string;
+  ingress?: string;
+  content: string;
+  socialMedia: {
+    facebook: boolean;
+    instagram: boolean;
+    linkedin: boolean;
+    tiktok: boolean;
+  };
+};
+
+interface ArticleForm {
+  title: string;
+  type: string;
+  date: string;
+  ingress: string;
+  content: string;
+  imageUrl: string;
+  socialMedia: {
+    facebook: boolean;
+    instagram: boolean;
+    linkedin: boolean;
+    tiktok: boolean;
+  };
+}
+
+const initialFormState: ArticleForm = {
+  title: "",
+  type: "Artikel",
+  date: new Date().toISOString().split("T")[0],
+  ingress: "",
+  content: "",
+  imageUrl: "",
+  socialMedia: { facebook: false, instagram: false, linkedin: false, tiktok: false },
+};
+
+interface ArticleFeedProps {
+  initialArticles: Article[];
+}
+
+const SOCIAL_ICONS: Record<string, React.ReactNode> = {
+  facebook: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  ),
+  linkedin: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0z"/>
+    </svg>
+  ),
+  instagram: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+      <path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.984 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.058.935 20.39.522 19.6 0.31c.296-.058 1.636-.261 2.913-.072C15.667 0.015 15.26 0 12 0zm0 2.16c3.203 0 3.58.016 4.85.074 1.17.054 1.802.249 2.227.415.562.217.96.477 1.381.896.419.42.679.819.896 1.381.166.425.361 1.057.415 2.227.058 1.27.074 1.647.074 4.85s-.016 3.58-.074 4.85c-.054 1.17-.249 1.802-.415 2.227-.217.562-.477.96-.896 1.381-.42.419-.819.679-1.381.896-.425.166-1.057.361-2.227.415-1.27.058-1.647.074-4.85.074s-3.58-.016-4.85-.074c-1.17-.054-1.802-.249-2.227-.415-.562-.217-.96-.477-1.381-.896-.419-.42-.679-.819-.896-1.381-.166-.425-.361-1.057-.415-2.227C2.176 15.58 2.16 15.203 2.16 12s.016-3.58.074-4.85c.054-1.17.249-1.802.415-2.227.217-.562.477-.96.896-1.381.42-.419.819-.679 1.381-.896.425-.166 1.057-.361 2.227-.415 1.27-.058 1.647-.074 4.85-.074zm0 3.678c-3.413 0-6.162 2.748-6.162 6.162 0 3.413 2.749 6.162 6.162 6.162 3.413 0 6.162-2.749 6.162-6.162 0-3.414-2.749-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.645-1.44-1.44 0-.794.645-1.439 1.44-1.439.794 0 1.44.645 1.44 1.439z"/>
+    </svg>
+  ),
+  tiktok: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.01.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.06-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.59-1.01V14.5c.01 2.32-.6 4.67-2.06 6.47-2.95 3.64-8.56 4.08-12.08 1.08-3.03-2.58-3.57-7.44-1.26-10.67 1.88-2.63 5.22-3.72 8.35-2.76V12.7c-1.32-.46-2.88-.35-4.03.48-1.36.98-1.77 2.82-1.14 4.31.55 1.29 1.89 2.14 3.27 2.23 1.58.07 3.16-.92 3.73-2.39.15-.36.2-.76.2-1.15V.02z"/>
+    </svg>
+  ),
+};
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function getTypeColor(type: string) {
+  switch (type.toLowerCase()) {
+    case "pm": return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800/50";
+    case "news":
+    case "nyhet": return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/50";
+    case "article":
+    case "artikel": return "bg-brand-light text-brand-dark dark:bg-brand-teal/20 dark:text-brand-light border-brand-teal/20";
+    default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700";
+  }
+}
+
+// ─── Article Read Modal ───────────────────────────────────────────────────────
+interface ArticleModalProps {
+  article: Article;
+  isAdmin: boolean;
+  onClose: () => void;
+  onDelete: (id: string) => void;
+  onEdit: (article: Article) => void;
+}
+
+function ArticleModal({ article, isAdmin, onClose, onDelete, onEdit }: ArticleModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/60 flex items-start justify-center p-4 md:p-8 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[1.5rem] shadow-2xl flex flex-col relative animate-in slide-in-from-bottom-5 duration-500 my-auto"
+        onClick={e => e.stopPropagation()}
+        style={{ minHeight: "842px" }}
+      >
+        <div className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center rounded-t-[1.5rem]">
+          <div className="flex items-center gap-4">
+            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest ${getTypeColor(article.type)}`}>
+              {article.type.toUpperCase()}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => { onClose(); onEdit(article); }}
+                  className="px-5 py-2 rounded-xl bg-brand-teal text-white font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-brand-dark transition-all"
+                >
+                  Redigera
+                </button>
+                <button
+                  onClick={() => onDelete(article.id)}
+                  className="px-5 py-2 rounded-xl bg-red-500 text-white font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-red-600 transition-all"
+                >
+                  Radera
+                </button>
+              </>
+            )}
+            <button
+              className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition-all text-2xl font-black"
+              onClick={onClose}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
+        <div className="p-8 md:p-16 flex-1 space-y-12 max-w-3xl mx-auto w-full pb-24">
+          {article.imageUrl && (
+            <div className="relative w-full aspect-video rounded-[2rem] overflow-hidden shadow-2xl mb-12 transform hover:scale-[1.01] transition-transform duration-500">
+              <Image src={article.imageUrl} alt={article.title} fill className="object-cover" />
+            </div>
+          )}
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-5xl font-black text-brand-dark dark:text-white leading-[1.1] uppercase italic">
+                {article.title}
+              </h1>
+              <div className="flex items-center gap-3">
+                <div className="h-1.5 w-12 bg-brand-teal rounded-full" />
+                <time className="text-[11px] font-black text-gray-400 uppercase tracking-widest italic">{formatDate(article.date)}</time>
+              </div>
+            </div>
+
+            {article.ingress && (
+              <div className="space-y-8">
+                <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 leading-relaxed border-l-4 border-brand-teal pl-8 italic">
+                  {article.ingress}
+                </div>
+                
+                {/* Social Media - Now below ingress */}
+                <div className="flex gap-6 items-center py-6 border-y border-gray-100 dark:border-slate-800">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Delad via</span>
+                  <div className="flex gap-3">
+                    {Object.entries(article.socialMedia).map(([platform, active]) => {
+                      if (!active) return null;
+                      const colors: Record<string, string> = {
+                        facebook: "bg-blue-600 text-white",
+                        linkedin: "bg-blue-700 text-white",
+                        instagram: "bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 text-white",
+                        tiktok: "bg-black text-white"
+                      };
+                      return (
+                        <span key={platform} className={`w-8 h-8 rounded-xl flex items-center justify-center p-2 shadow-sm ${colors[platform] || "bg-gray-200"}`}>
+                          {SOCIAL_ICONS[platform]}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            className="article-rich-content text-gray-600 dark:text-gray-300 text-lg leading-[1.8] font-medium space-y-8"
+            dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, "<br/>") }}
+          />
+          <div className="pt-16 border-t border-gray-100 dark:border-slate-800 flex justify-end items-center">
+            <button onClick={onClose} className="group px-8 py-3 rounded-2xl bg-brand-dark text-white font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-brand-teal transition-all">
+              <span className="group-hover:-translate-x-1 transition-transform">←</span> Tillbaka till listan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Article Edit / Create Lightbox ──────────────────────────────────────────
+interface ArticleEditModalProps {
+  editingArticle: Article | null; // null = create new
+  onClose: () => void;
+  onSaved: (article: Article, isNew: boolean) => void;
+}
+
+function ArticleEditModal({ editingArticle, onClose, onSaved }: ArticleEditModalProps) {
+  const isEditing = editingArticle !== null;
+  const [formData, setFormData] = useState<ArticleForm>(
+    editingArticle
+      ? {
+          title: editingArticle.title,
+          type: editingArticle.type,
+          date: editingArticle.date.split("T")[0],
+          ingress: editingArticle.ingress || "",
+          content: editingArticle.content,
+          imageUrl: editingArticle.imageUrl || "",
+          socialMedia: { ...editingArticle.socialMedia },
+        }
+      : initialFormState
+  );
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [availableImages, setAvailableImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
+  const [showStreamingPicker, setShowStreamingPicker] = useState(false);
+  const [streamData, setStreamData] = useState({ service: "youtube", url: "" });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ id: string; title: string; thumbnail: string }[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/images")
+      .then(r => r.ok ? r.json() : { images: [] })
+      .then(d => setAvailableImages(d.images || []))
+      .catch(() => {});
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSocialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, socialMedia: { ...prev.socialMedia, [name]: checked } }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const body = new FormData();
+    body.append("file", file);
+    try {
+      const res = await fetch("/api/images", { method: "POST", body });
+      if (res.ok) {
+        const data = await res.json();
+        setFormData(prev => ({ ...prev, imageUrl: data.url }));
+        setAvailableImages(prev => [...prev, data.url]);
+        setShowMediaPicker(false);
+      }
+    } catch {
+      setMessage({ type: "error", text: "Kunde inte ladda upp bild." });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/articles", {
+        method: isEditing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(isEditing ? { ...formData, id: editingArticle!.id } : formData),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const saved: Article = data.article;
+        setMessage({ type: "success", text: isEditing ? "Artikeln har uppdaterats!" : "Artikeln har publicerats!" });
+        setTimeout(() => {
+          onSaved(saved, !isEditing);
+          onClose();
+        }, 1000);
+      } else {
+        const err = await res.json();
+        setMessage({ type: "error", text: err.error || "Något gick fel." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Kunde inte kommunicera med servern." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/videos/search?service=${streamData.service}&q=${encodeURIComponent(searchQuery)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data.videos || []);
+      }
+    } catch (e) {
+      console.error("Search failed", e);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const insertHtml = (tag: string, endTag?: string) => {
+    const textarea = document.getElementById("article-content-editor") as HTMLTextAreaElement;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selection = text.substring(start, end);
+    const replacement = endTag ? `${tag}${selection}${endTag}` : tag;
+    const newValue = text.substring(0, start) + replacement + text.substring(end);
+    setFormData(prev => ({ ...prev, content: newValue }));
+    
+    // Set focus back and adjust cursor
+    setTimeout(() => {
+      textarea.focus();
+      const cursorPos = start + tag.length + (endTag ? selection.length : 0);
+      textarea.setSelectionRange(cursorPos, cursorPos);
+    }, 0);
+  };
+
+  const getEmbedHtml = (service: string, url: string) => {
+    let videoId = "";
+    if (service === "youtube") {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      videoId = (match && match[2].length === 11) ? match[2] : url;
+      return `<div class="aspect-video w-full rounded-2xl overflow-hidden shadow-lg my-8"><iframe src="https://www.youtube.com/embed/${videoId}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    } else if (service === "vimeo") {
+      const regExp = /vimeo\.com\/(?:video\/)?(\d+)/;
+      const match = url.match(regExp);
+      videoId = match ? match[1] : url;
+      return `<div class="aspect-video w-full rounded-2xl overflow-hidden shadow-lg my-8"><iframe src="https://player.vimeo.com/video/${videoId}" class="w-full h-full border-0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+    }
+    return "";
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[150] bg-black/70 backdrop-blur-sm flex items-start justify-center p-4 md:p-8 overflow-y-auto animate-in fade-in duration-300"
+    >
+      <div
+        className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[2rem] shadow-2xl flex flex-col my-auto overflow-hidden animate-in slide-in-from-bottom-5 duration-500"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-8 py-5 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-black text-brand-dark dark:text-white uppercase italic">
+              {isEditing ? "Redigera artikel" : "Skapa ny artikel"}
+            </h2>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">
+              Administrera innehåll – stödjer HTML-formatering
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-500 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 text-2xl font-black transition-all"
+          >
+            &times;
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-8 space-y-7">
+          {/* Image - Moved to Top */}
+          <div className="space-y-4 p-6 bg-gray-50 dark:bg-slate-800/50 rounded-3xl border border-gray-100 dark:border-slate-800">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Huvudbild</label>
+            <div className="flex items-center gap-6">
+              <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-white dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 flex-shrink-0">
+                <Image
+                  src={formData.imageUrl || "/logo.png"}
+                  alt="Preview"
+                  fill
+                  className={`object-cover ${!formData.imageUrl && "p-6 opacity-20"}`}
+                />
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-bold text-gray-600 dark:text-gray-400">Välj en representativ bild för din artikel.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowMediaPicker(true)}
+                  className="px-6 py-3 rounded-2xl bg-brand-teal text-white font-black text-xs uppercase tracking-widest hover:bg-brand-dark transition-all shadow-lg shadow-brand-teal/20"
+                >
+                  Välj från bibliotek +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Title + Type + Date */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Titel</label>
+              <input
+                required
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                placeholder="Ange en rubrik..."
+                className="w-full px-5 py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 outline-none transition-all font-bold text-gray-900 dark:text-white text-lg"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Kategori</label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                className="w-full px-5 py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-brand-teal outline-none transition-all font-bold text-gray-900 dark:text-white text-lg"
+              >
+                <option value="Artikel">Artikel</option>
+                <option value="PM">Pressmeddelande (PM)</option>
+                <option value="Nyhet">Nyhet</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Datum</label>
+              <input
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                className="w-full px-5 py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-brand-teal outline-none transition-all font-bold text-gray-900 dark:text-white text-lg"
+              />
+            </div>
+          </div>
+
+          {/* Ingress */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ingress</label>
+            <textarea
+              name="ingress"
+              value={formData.ingress}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Skriv en kraftfull ingress..."
+              className="w-full px-5 py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-brand-teal outline-none transition-all font-bold text-gray-900 dark:text-white italic text-base"
+            />
+          </div>
+
+          {/* Content with Toolbar and Preview */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Brödtext (Rich Text Editor)</label>
+              <div className="flex bg-gray-100 dark:bg-slate-800 rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => setIsPreview(false)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!isPreview ? "bg-white dark:bg-slate-700 shadow-sm text-brand-teal" : "text-gray-400"}`}
+                >
+                  Redigering
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPreview(true)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isPreview ? "bg-white dark:bg-slate-700 shadow-sm text-brand-teal" : "text-gray-400"}`}
+                >
+                  Visning
+                </button>
+              </div>
+            </div>
+
+            {!isPreview ? (
+              <div className="space-y-2">
+                {/* Rich Text Toolbar */}
+                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-t-2xl border-x border-t border-gray-100 dark:border-slate-700">
+                  <button type="button" onClick={() => insertHtml("<b>", "</b>")} className="w-10 h-10 rounded-lg bg-white dark:bg-slate-700 font-bold border border-gray-100 dark:border-slate-600 hover:border-brand-teal transition-all">B</button>
+                  <button type="button" onClick={() => insertHtml("<i>", "</i>")} className="w-10 h-10 rounded-lg bg-white dark:bg-slate-700 italic border border-gray-100 dark:border-slate-600 hover:border-brand-teal transition-all">I</button>
+                  <button type="button" onClick={() => insertHtml("<h2>", "</h2>")} className="px-3 h-10 rounded-lg bg-white dark:bg-slate-700 font-black border border-gray-100 dark:border-slate-600 hover:border-brand-teal transition-all text-xs">H2</button>
+                  <button type="button" onClick={() => insertHtml("<h3>", "</h3>")} className="px-3 h-10 rounded-lg bg-white dark:bg-slate-700 font-black border border-gray-100 dark:border-slate-600 hover:border-brand-teal transition-all text-xs">H3</button>
+                   <button type="button" onClick={() => insertHtml("<ul>\n  <li>", "</li>\n</ul>")} className="w-10 h-10 rounded-lg bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 hover:border-brand-teal transition-all">List</button>
+                  <button type="button" onClick={() => insertHtml('<a href="#" target="_blank">', "</a>")} className="w-10 h-10 rounded-lg bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 hover:border-brand-teal transition-all">Länk</button>
+                  <button type="button" onClick={() => insertHtml('<img src="/logo.png" alt="Bild" />')} className="px-3 h-10 rounded-lg bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 hover:border-brand-teal transition-all text-[10px] font-black">MEDIA</button>
+                  <button type="button" onClick={() => setShowStreamingPicker(true)} className="px-3 h-10 rounded-lg bg-brand-teal text-white border border-brand-teal hover:bg-brand-dark transition-all text-[10px] font-black uppercase">STREAM</button>
+                </div>
+                <textarea
+                  id="article-content-editor"
+                  required
+                  name="content"
+                  value={formData.content}
+                  onChange={handleChange}
+                  rows={15}
+                  placeholder="Skriv din artikeltext här..."
+                  className="w-full px-5 py-4 rounded-b-2xl bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-brand-teal outline-none transition-all font-bold text-gray-900 dark:text-white resize-none leading-relaxed text-base"
+                />
+              </div>
+            ) : (
+              <div className="w-full px-5 py-8 rounded-2xl bg-gray-50 dark:bg-slate-800 min-h-[400px]">
+                <div
+                  className="article-rich-content text-gray-600 dark:text-gray-300 text-lg leading-[1.8] font-medium space-y-8"
+                  dangerouslySetInnerHTML={{ __html: formData.content.replace(/\n/g, "<br/>") }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Social Media - Now "Delad via" */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Delad via</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {["facebook", "linkedin", "instagram", "tiktok"].map(platform => (
+                <label
+                  key={platform}
+                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
+                    formData.socialMedia[platform as keyof typeof formData.socialMedia]
+                      ? "bg-brand-teal/5 border-brand-teal text-brand-teal"
+                      : "bg-gray-50 dark:bg-slate-800 border-transparent text-gray-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-gray-200 dark:bg-slate-700 flex items-center justify-center p-1.5">
+                      {SOCIAL_ICONS[platform]}
+                    </span>
+                    <span className="font-black text-[10px] uppercase tracking-widest">{platform}</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    name={platform}
+                    checked={formData.socialMedia[platform as keyof typeof formData.socialMedia]}
+                    onChange={handleSocialChange}
+                    className="w-5 h-5 rounded-lg border-gray-300 text-brand-teal focus:ring-brand-teal"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Status message */}
+          {message && (
+            <div className={`p-4 rounded-2xl font-bold text-sm ${message.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+              {message.text}
+            </div>
+          )}
+
+          {/* Submit */}
+          <div className="pt-8 grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-5 rounded-2xl bg-gray-50 dark:bg-slate-800 text-brand-dark dark:text-white font-black text-base tracking-widest uppercase hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
+            >
+              Avbryt
+            </button>
+            <button
+              disabled={loading}
+              type="submit"
+              className="py-5 rounded-2xl bg-brand-teal text-white font-black text-base tracking-widest uppercase shadow-xl hover:bg-brand-dark transition-all disabled:opacity-50"
+            >
+              {loading ? "Sparar..." : isEditing ? "Spara ändringar" : "Publicera nu"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Media Picker sub-modal */}
+      {showMediaPicker && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setShowMediaPicker(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-7 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
+              <div>
+                <h3 className="text-xl font-black text-brand-dark dark:text-white uppercase italic">Mediebibliotek</h3>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Välj en befintlig bild eller ladda upp en ny</p>
+              </div>
+              <button
+                onClick={() => setShowMediaPicker(false)}
+                className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 shadow-md flex items-center justify-center text-2xl font-black text-gray-400 hover:text-brand-teal transition-all"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-7">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <label className="relative aspect-square rounded-2xl border-2 border-dashed border-brand-teal/30 flex flex-col items-center justify-center cursor-pointer hover:bg-brand-teal/5 hover:border-brand-teal transition-all group">
+                  <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+                  {uploading ? (
+                    <div className="text-center animate-pulse">
+                      <div className="w-7 h-7 rounded-full border-4 border-brand-teal border-t-transparent animate-spin mx-auto mb-2" />
+                      <span className="text-[8px] font-black uppercase text-brand-teal">Laddar...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-4xl text-brand-teal mb-1">+</span>
+                      <span className="text-[8px] font-black uppercase text-gray-400 group-hover:text-brand-teal">Ladda upp</span>
+                    </>
+                  )}
+                </label>
+                {["/logo.png", ...availableImages].map((img, i) => (
+                  <div
+                    key={i}
+                    onClick={() => { setFormData(p => ({ ...p, imageUrl: img })); setShowMediaPicker(false); }}
+                    className={`relative aspect-square rounded-2xl overflow-hidden cursor-pointer transition-all ${
+                      formData.imageUrl === img ? "ring-4 ring-brand-teal ring-offset-4 dark:ring-offset-slate-900" : "opacity-80 hover:opacity-100 hover:scale-[1.02]"
+                    }`}
+                  >
+                    <Image src={img} alt="Media" fill className="object-cover" />
+                    <div className={`absolute inset-0 bg-brand-teal/20 transition-opacity ${formData.imageUrl === img ? "opacity-100" : "opacity-0 hover:opacity-40"}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-5 border-t border-gray-100 dark:border-slate-800 text-center bg-gray-50/30 dark:bg-slate-800/30">
+              <button
+                onClick={() => setShowMediaPicker(false)}
+                className="px-8 py-3 rounded-2xl bg-brand-dark text-white font-black text-xs uppercase tracking-widest hover:bg-brand-teal transition-all"
+              >
+                Stäng bibliotek
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Streaming Picker sub-modal */}
+      {showStreamingPicker && (
+        <div
+          className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setShowStreamingPicker(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-7 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
+              <div>
+                <h3 className="text-xl font-black text-brand-dark dark:text-white uppercase italic">Bädda in Video</h3>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">YouTube eller Vimeo</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStreamingPicker(false)}
+                className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 shadow-md flex items-center justify-center text-2xl font-black text-gray-400 hover:text-brand-teal transition-all"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="p-8 space-y-6">
+              <div className="flex gap-4 p-1 bg-gray-100 dark:bg-slate-800 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setStreamData(p => ({ ...p, service: "youtube" }))}
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${streamData.service === "youtube" ? "bg-white dark:bg-slate-700 text-brand-teal shadow-md" : "text-gray-400"}`}
+                >
+                  YouTube
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStreamData(p => ({ ...p, service: "vimeo" }))}
+                  className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${streamData.service === "vimeo" ? "bg-white dark:bg-slate-700 text-brand-teal shadow-md" : "text-gray-400"}`}
+                >
+                  Vimeo
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sök eller ange URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder={streamData.service === "youtube" ? "Sök på YouTube eller klistra in länk..." : "Sök på Vimeo eller klistra in länk..."}
+                    className="flex-1 px-5 py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-brand-teal outline-none font-bold italic"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleSearch())}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSearch}
+                    disabled={searching || !searchQuery}
+                    className="px-6 rounded-2xl bg-brand-dark text-white font-black text-[10px] uppercase tracking-widest hover:bg-brand-teal transition-all disabled:opacity-50"
+                  >
+                    {searching ? "..." : "Sök"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sökresultat</label>
+                  <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto p-1">
+                    {searchResults.map(video => (
+                      <div
+                        key={video.id}
+                        onClick={() => {
+                          const url = streamData.service === "youtube" 
+                            ? `https://www.youtube.com/watch?v=${video.id}`
+                            : `https://vimeo.com/${video.id}`;
+                          setStreamData(p => ({ ...p, url }));
+                          setSearchQuery("");
+                          setSearchResults([]);
+                        }}
+                        className={`group relative aspect-video rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
+                          streamData.url.includes(video.id) ? "border-brand-teal shadow-lg" : "border-transparent hover:border-brand-teal/50"
+                        }`}
+                      >
+                        <Image src={video.thumbnail} alt={video.title} fill className="object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-[8px] font-black text-white uppercase line-clamp-1">{video.title}</p>
+                        </div>
+                        {streamData.url.includes(video.id) && (
+                          <div className="absolute inset-0 bg-brand-teal/20 flex items-center justify-center">
+                            <span className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center text-xl shadow-lg">✓</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Vald Video URL / ID</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  className="w-full px-5 py-3 rounded-xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-800 font-bold text-xs"
+                  value={streamData.url}
+                  onChange={e => setStreamData(p => ({ ...p, url: e.target.value }))}
+                />
+              </div>
+
+              {streamData.url && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Förhandsvisning</label>
+                  <div 
+                    className="preview-embed aspect-video rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-800"
+                    dangerouslySetInnerHTML={{ __html: getEmbedHtml(streamData.service, streamData.url) }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-100 dark:border-slate-800 flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowStreamingPicker(false)}
+                className="flex-1 py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 text-brand-dark dark:text-white font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-all"
+              >
+                Avbryt
+              </button>
+              <button
+                type="button"
+                disabled={!streamData.url}
+                onClick={() => {
+                  insertHtml(getEmbedHtml(streamData.service, streamData.url));
+                  setShowStreamingPicker(false);
+                  setStreamData({ service: "youtube", url: "" });
+                }}
+                className="flex-1 py-4 rounded-2xl bg-brand-teal text-white font-black text-xs uppercase tracking-widest hover:bg-brand-dark transition-all disabled:opacity-50 shadow-xl shadow-brand-teal/20"
+              >
+                Infoga Video +
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main ArticleFeed Component ───────────────────────────────────────────────
+export default function ArticleFeed({ initialArticles }: ArticleFeedProps) {
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterType, setFilterType] = useState<string>("Alla");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [socialFilters, setSocialFilters] = useState({ facebook: false, instagram: false, linkedin: false, tiktok: false });
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [articles, setArticles] = useState(initialArticles);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Edit / Create lightbox
+  const [editingArticle, setEditingArticle] = useState<Article | null | "new">(undefined as any);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const openCreateModal = () => { setEditingArticle(null); setShowEditModal(true); };
+  const openEditModal = (article: Article) => { setEditingArticle(article); setShowEditModal(true); };
+
+  const checkAuth = () => {
+    setIsAdmin(localStorage.getItem("enzy_auth") === "true");
+  };
+
+  useEffect(() => {
+    checkAuth();
+    window.addEventListener("enzy_auth_change", checkAuth);
+    return () => window.removeEventListener("enzy_auth_change", checkAuth);
+  }, []);
+
+  useEffect(() => { setArticles(initialArticles); }, [initialArticles]);
+
+  const filteredArticles = useMemo(() => {
+    return articles.filter(article => {
+      if (filterType !== "Alla" && article.type.toLowerCase() !== filterType.toLowerCase()) return false;
+      const articleDate = new Date(article.date);
+      if (startDate && articleDate < new Date(startDate)) return false;
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (articleDate > end) return false;
+      }
+      const selectedPlatforms = Object.entries(socialFilters).filter(([, v]) => v).map(([k]) => k);
+      for (const platform of selectedPlatforms) {
+        if (!article.socialMedia?.[platform as keyof typeof article.socialMedia]) return false;
+      }
+      return true;
+    });
+  }, [articles, filterType, startDate, endDate, socialFilters]);
+
+  const toggleSocial = (platform: keyof typeof socialFilters) => {
+    setSocialFilters(prev => ({ ...prev, [platform]: !prev[platform] }));
+  };
+
+  const hasActiveFilters = filterType !== "Alla" || startDate || endDate || Object.values(socialFilters).some(v => v);
+
+  const deleteArticle = async (id: string) => {
+    try {
+      const response = await fetch(`/api/articles?id=${id}`, { method: "DELETE" });
+      if (response.ok) {
+        setArticles(prev => prev.filter(a => a.id !== id));
+        setDeletingId(null);
+      } else {
+        alert("Kunde inte radera artikeln.");
+      }
+    } catch {
+      alert("Ett fel uppstod vid radering.");
+    }
+  };
+
+  const handleArticleSaved = (saved: Article, isNew: boolean) => {
+    if (isNew) {
+      setArticles(prev => [saved, ...prev]);
+    } else {
+      setArticles(prev => prev.map(a => a.id === saved.id ? saved : a));
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-2">
+        {hasActiveFilters && (
+          <h2 className="text-2xl font-black text-brand-dark dark:text-white uppercase italic">
+            Resultat
+          </h2>
+        )}
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <button
+              onClick={openCreateModal}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-widest bg-brand-teal text-white shadow-lg hover:bg-brand-dark transition-all"
+            >
+              + Skapa artikel
+            </button>
+          )}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+              showFilters || hasActiveFilters
+                ? "bg-brand-teal text-white shadow-lg"
+                : "bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 hover:border-brand-teal"
+            }`}
+          >
+            {showFilters ? "Stäng filter" : hasActiveFilters ? "Ändra filter" : "Filtrera"}
+            <span className="text-lg">×</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className={`bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-slate-800 transition-all duration-500 overflow-hidden ${
+        showFilters ? "p-8 opacity-100 max-h-[1000px] mb-8" : "p-0 opacity-0 max-h-0 pointer-events-none"
+      }`}>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="space-y-3">
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Kategori</label>
+            <div className="flex flex-wrap gap-2">
+              {["Alla", "PM", "Nyhet", "Artikel"].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setFilterType(t)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                    filterType === t ? "bg-brand-teal text-white border-brand-teal" : "bg-gray-50 dark:bg-slate-800 text-gray-500 border-transparent"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Från</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 font-bold text-xs outline-none focus:ring-2 focus:ring-brand-teal/50" />
+            </div>
+            <div className="space-y-3">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Till</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-slate-800 font-bold text-xs outline-none focus:ring-2 focus:ring-brand-teal/50" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Sociala medier</label>
+            <div className="flex gap-2">
+              {["facebook", "linkedin", "instagram", "tiktok"].map(p => (
+                <button
+                  key={p}
+                  onClick={() => toggleSocial(p as any)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black border transition-all ${
+                    socialFilters[p as keyof typeof socialFilters] ? "bg-brand-teal text-white border-transparent shadow-md scale-110" : "bg-gray-50 dark:bg-slate-800 text-gray-400 border-transparent opacity-50 hover:opacity-100"
+                  }`}
+                >
+                  <div className="w-4 h-4">
+                    {SOCIAL_ICONS[p]}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Article Grid */}
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {filteredArticles.map(article => (
+          <article
+            key={article.id}
+            className="group flex flex-col bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer"
+            onClick={() => setSelectedArticle(article)}
+          >
+            <div className="relative w-full h-56 bg-gray-50 dark:bg-slate-800">
+              <Image
+                src={article.imageUrl || "/logo.png"}
+                alt={article.title}
+                fill
+                className={`object-cover transition-transform duration-700 group-hover:scale-110 ${!article.imageUrl && "p-12 object-contain opacity-40"}`}
+              />
+              <div className="absolute top-4 left-4">
+                <span className={`px-4 py-1 rounded-full text-[10px] font-black tracking-widest shadow-lg ${getTypeColor(article.type)}`}>
+                  {article.type.toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <div className="p-8 flex-1 flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <time className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{formatDate(article.date)}</time>
+              </div>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white mb-4 line-clamp-2 leading-tight group-hover:text-brand-teal transition-colors">
+                {article.title}
+              </h2>
+              <div
+                className="article-rich-content text-gray-500 dark:text-gray-400 line-clamp-3 mb-8 leading-relaxed text-sm font-medium"
+                dangerouslySetInnerHTML={{ __html: article.ingress || "" }}
+              />
+              <div className="mt-auto pt-6 border-t border-gray-50 dark:border-slate-800/50 flex items-center justify-between">
+                <span className="text-[10px] font-black text-brand-teal uppercase tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all">
+                  LÄS MER <span>&rarr;</span>
+                </span>
+                <div className="flex gap-2 opacity-60">
+                  {article.socialMedia.facebook && <span className="w-5 h-5 flex items-center justify-center text-blue-600">{SOCIAL_ICONS.facebook}</span>}
+                  {article.socialMedia.linkedin && <span className="w-5 h-5 flex items-center justify-center text-blue-700">{SOCIAL_ICONS.linkedin}</span>}
+                  {article.socialMedia.instagram && <span className="w-5 h-5 flex items-center justify-center text-pink-600">{SOCIAL_ICONS.instagram}</span>}
+                  {article.socialMedia.tiktok && <span className="w-5 h-5 flex items-center justify-center text-black dark:text-white">{SOCIAL_ICONS.tiktok}</span>}
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deletingId && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4"
+        >
+          <div
+            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 text-center animate-in zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mx-auto mb-8">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h2 className="text-2xl font-black text-brand-dark dark:text-white uppercase mb-4 italic">Radera artikel?</h2>
+            <p className="text-gray-500 dark:text-gray-400 font-bold text-sm mb-10 leading-relaxed">
+              Är du säker på att du vill radera denna artikel? Denna åtgärd går inte att ångra.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setDeletingId(null)}
+                className="py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 text-brand-dark dark:text-white font-black text-xs uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={() => deletingId && deleteArticle(deletingId)}
+                className="py-4 rounded-2xl bg-red-500 text-white font-black text-xs uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+              >
+                Ja, radera
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Article Read Modal */}
+      {selectedArticle && (
+        <ArticleModal
+          article={selectedArticle}
+          isAdmin={isAdmin}
+          onClose={() => setSelectedArticle(null)}
+          onDelete={id => { setSelectedArticle(null); setDeletingId(id); }}
+          onEdit={article => { setSelectedArticle(null); openEditModal(article); }}
+        />
+      )}
+
+      {/* Article Edit / Create Lightbox */}
+      {showEditModal && (
+        <ArticleEditModal
+          editingArticle={editingArticle as Article | null}
+          onClose={() => setShowEditModal(false)}
+          onSaved={handleArticleSaved}
+        />
+      )}
+
+      <style jsx global>{`
+        .article-rich-content a { color: #008080; text-decoration: underline; font-weight: 700; }
+        .article-rich-content b, .article-rich-content strong { color: inherit; font-weight: 800; }
+        .article-rich-content img { border-radius: 1rem; margin: 2rem 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); max-width: 100%; height: auto; }
+        .article-rich-content h2, .article-rich-content h3 { font-weight: 900; color: #1a202c; text-transform: uppercase; margin-top: 3rem; margin-bottom: 1rem; }
+        .dark .article-rich-content h2, .dark .article-rich-content h3 { color: #fff; }
+      `}</style>
+    </div>
+  );
+}
