@@ -30,7 +30,7 @@ export default function Home() {
             <span className="text-brand-cyan">infektioner</span>
           </h1>
           <p className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-lg font-medium">
-            ColdZyme® munhålespray skapar en skyddande barriär som verkar omedelbart mot förkylningsvirus.
+            ColdZyme® munspray skapar en skyddande barriär som verkar omedelbart mot förkylningsvirus.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-6 pt-4">
             <button className="bg-brand-teal hover:bg-brand-dark text-white text-xl px-10 py-4 rounded-full font-bold transition-all shadow-2xl hover:shadow-cyan-500/20 transform hover:-translate-y-1">
