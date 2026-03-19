@@ -3,18 +3,31 @@ const path = require('path');
 const { execSync } = require('child_process');
 const inquirer = require('inquirer').default;
 
-const parentDir = path.dirname(__dirname);
+// Get the Git directory (where all projects are)
+const gitDir = path.dirname(__dirname) === path.dirname(path.dirname(__dirname))
+  ? path.dirname(__dirname)
+  : path.dirname(path.dirname(__dirname));
 
-const projects = fs.readdirSync(parentDir)
+const projects = fs.readdirSync(gitDir)
   .filter(dir => {
-    const dirPath = path.join(parentDir, dir);
-    return fs.statSync(dirPath).isDirectory() &&
-           fs.existsSync(path.join(dirPath, 'package.json')) &&
-           dir !== path.basename(__dirname); // exclude current if it's a project
+    const dirPath = path.join(gitDir, dir);
+    try {
+      return fs.statSync(dirPath).isDirectory() &&
+             fs.existsSync(path.join(dirPath, 'package.json'));
+    } catch {
+      return false;
+    }
   })
-  .concat(path.basename(__dirname)); // include current
+  .sort();
 
 async function main() {
+  console.log(`\nFound ${projects.length} deployable project(s)\n`);
+
+  if (projects.length === 0) {
+    console.log('No projects with package.json found.');
+    process.exit(1);
+  }
+
   const { project } = await inquirer.prompt([
     {
       type: 'list',
@@ -24,8 +37,9 @@ async function main() {
     }
   ]);
 
-  const projectPath = path.join(parentDir, project);
+  const projectPath = path.join(gitDir, project);
   process.chdir(projectPath);
+  console.log(`\nDeploying from: ${projectPath}\n`);
 
   try {
     // Check if git repo
