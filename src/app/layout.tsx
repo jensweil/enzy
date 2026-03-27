@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="sv" className="scroll-smooth">
       <body
-        className={`${inter.className} antialiased min-h-screen flex flex-col pt-20`}
+        className={`${inter.className} antialiased min-h-screen flex flex-col pt-24`}
       >
         <Navbar />
         <main className="flex-grow">

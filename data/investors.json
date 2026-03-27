@@ -1,0 +1,47 @@
+{
+  "stock": {
+    "ticker": "ENZY",
+    "isin": "SE0003943620",
+    "market": "Nasdaq First North Growth Market",
+    "sector": "Hälsovård",
+    "shares": "142 823 696",
+    "price": "4.28 SEK",
+    "change": "+2.4%"
+  },
+  "reports": [
+    {
+      "year": 2026,
+      "items": [
+        { "title": "Bokslutskommuniké 2025", "url": "https://www.enzymatica.com/files/Main/18091/4309091/hela-rapporten-pdf.pdf" }
+      ]
+    },
+    {
+      "year": 2025,
+      "items": [
+        { "title": "Kvartalsrapport Q3/2025", "url": "https://www.enzymatica.com/files/Main/18091/4258860/hela-rapporten-pdf.pdf" },
+        { "title": "Kvartalsrapport Q2/2025", "url": "https://www.enzymatica.com/files/Main/18091/4208112/hela-rapporten-pdf.pdf" },
+        { "title": "Kvartalsrapport Q1/2025", "url": "https://www.enzymatica.com/files/Main/18091/4142247/hela-rapporten-pdf.pdf" },
+        { "title": "Årsredovisning 2024", "url": "https://www.enzymatica.com/files/Main/18091/4134033/enzymatica_arsredovisning_2024.pdf" }
+      ]
+    },
+    {
+      "year": 2024,
+      "items": [
+        { "title": "Delårsrapport Q3/2024", "url": "https://www.enzymatica.com/files/Main/18091/4062456/hela-rapporten-pdf.pdf" },
+        { "title": "Delårsrapport Q2/2024", "url": "https://www.enzymatica.com/files/Main/18091/4016272/hela-rapporten-pdf.pdf" },
+        { "title": "Delårsrapport Q1/2024", "url": "https://www.enzymatica.com/files/Main/18091/3967643/hela-rapporten-pdf.pdf" },
+        { "title": "Årsredovisning 2023", "url": "https://www.enzymatica.com/files/Main/18091/3958406/enzymatica-arsredovisning-2023.pdf" }
+      ]
+    }
+  ],
+  "pressReleases": [
+    { "date": "2026-03-01", "title": "Bokslutskommuniké 2025: Ny vd tar vid – inleder nästa fas", "url": "/articles/1" },
+    { "date": "2026-02-15", "title": "ColdZyme® minskar förkylningstiden och symtomen", "url": "/articles/3" },
+    { "date": "2026-01-20", "title": "Enzymatica emitterar nya aktier", "url": "#" }
+  ],
+  "calendar": [
+    { "date": "2026-05-15", "event": "Delårsrapport Q1 2026" },
+    { "date": "2026-05-20", "event": "Årsstämma 2026" },
+    { "date": "2026-08-18", "event": "Delårsrapport Q2 2026" }
+  ]
+}

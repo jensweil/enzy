@@ -1,14 +1,20 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import ContactModal from "./ContactModal";
+
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("Enzy");
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const pathname = usePathname();
+
 
   // Login form state
   const [loginUsername, setLoginUsername] = useState("");
@@ -101,43 +107,63 @@ export default function Navbar() {
     <>
       <nav className="fixed top-0 w-full z-50 glassmorphism border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-24">
             <div className="flex items-center">
-              <Link href="/" className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-3">
+                <Image src="/logo.png" alt="Enzymatica" width={80} height={80} className="object-contain" />
                 <span className="text-2xl font-bold text-brand-dark dark:text-white tracking-tight">
                   Enzymatica
                 </span>
-                <span className="h-2 w-2 rounded-full bg-brand-cyan"></span>
               </Link>
             </div>
 
             {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="/" className="text-gray-700 dark:text-gray-200 hover:text-brand-teal transition-colors font-medium">Hem</Link>
-              <Link href="/articles" className="text-gray-700 dark:text-gray-200 hover:text-brand-teal transition-colors font-medium">Artiklar &amp; Media</Link>
-
-              {isLoggedIn ? (
-                <button
-                  onClick={openProfile}
-                  className="bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal px-4 py-2 rounded-xl font-bold transition-all text-sm uppercase tracking-widest flex items-center gap-2"
-                >
-                  <span className="w-6 h-6 rounded-full bg-brand-teal text-white text-[10px] font-black flex items-center justify-center">
-                    {username.charAt(0).toUpperCase()}
-                  </span>
-                  {username}
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setShowLoginModal(true); setLoginError(""); }}
-                  className="bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal px-4 py-2 rounded-xl font-bold transition-all text-sm uppercase tracking-widest"
-                >
-                  Logga in
-                </button>
-              )}
-
-              <button className="bg-brand-teal hover:bg-brand-dark text-white px-6 py-2 rounded-full font-medium transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+            <div className="hidden md:flex items-center space-x-2">
+              <Link 
+                href="/" 
+                className={`px-5 py-2.5 rounded-full font-bold transition-all text-sm uppercase tracking-widest ${pathname === "/" ? "bg-brand-teal text-white shadow-lg shadow-brand-teal/20" : "text-gray-600 dark:text-gray-300 hover:text-brand-teal hover:bg-brand-light dark:hover:bg-slate-800"}`}
+              >
+                Hem
+              </Link>
+              <Link 
+                href="/articles" 
+                className={`px-5 py-2.5 rounded-full font-bold transition-all text-sm uppercase tracking-widest ${pathname.startsWith("/articles") ? "bg-brand-teal text-white shadow-lg shadow-brand-teal/20" : "text-gray-600 dark:text-gray-300 hover:text-brand-teal hover:bg-brand-light dark:hover:bg-slate-800"}`}
+              >
+                Nyheter
+              </Link>
+              <Link 
+                href="/investerare" 
+                className={`px-5 py-2.5 rounded-full font-bold transition-all text-sm uppercase tracking-widest ${pathname.startsWith("/investerare") ? "bg-brand-teal text-white shadow-lg shadow-brand-teal/20" : "text-gray-600 dark:text-gray-300 hover:text-brand-teal hover:bg-brand-light dark:hover:bg-slate-800"}`}
+              >
                 Investerare
+              </Link>
+              <button
+                onClick={() => setShowContactModal(true)}
+                className={`px-5 py-2.5 rounded-full font-bold transition-all text-sm uppercase tracking-widest ${showContactModal ? "bg-brand-teal text-white shadow-lg shadow-brand-teal/20" : "text-gray-600 dark:text-gray-300 hover:text-brand-teal hover:bg-brand-light dark:hover:bg-slate-800"}`}
+              >
+                Kontakt
               </button>
+
+              <div className="pl-4 border-l border-gray-200 dark:border-gray-800 ml-2">
+                {isLoggedIn ? (
+                  <button
+                    onClick={openProfile}
+                    className="bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal px-5 py-2.5 rounded-full font-bold transition-all text-sm uppercase tracking-widest flex items-center gap-2"
+                  >
+                    <span className="w-5 h-5 rounded-full bg-brand-teal text-white text-[10px] font-black flex items-center justify-center">
+                      {username.charAt(0).toUpperCase()}
+                    </span>
+                    {username}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setShowLoginModal(true); setLoginError(""); }}
+                    className="bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal px-5 py-2.5 rounded-full font-bold transition-all text-sm uppercase tracking-widest"
+                  >
+                     Logga in
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -160,22 +186,35 @@ export default function Navbar() {
         <div className={`md:hidden absolute top-20 left-0 w-full bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-2xl transition-all duration-300 ease-in-out transform origin-top ${isMobileMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0 pointer-events-none'}`}>
           <div className="px-6 py-8 space-y-6">
             <div className="flex flex-col space-y-4">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-bold text-gray-800 dark:text-white hover:text-brand-teal transition-colors"
+                className={`p-4 rounded-2xl text-lg font-bold transition-all flex items-center gap-4 ${pathname === "/" ? "bg-brand-light text-brand-teal" : "text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-800"}`}
               >
                 Hem
               </Link>
-              <Link 
-                href="/articles" 
+              <Link
+                href="/articles"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-bold text-gray-800 dark:text-white hover:text-brand-teal transition-colors"
+                className={`p-4 rounded-2xl text-lg font-bold transition-all flex items-center gap-4 ${pathname.startsWith("/articles") ? "bg-brand-light text-brand-teal" : "text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-800"}`}
               >
-                Artiklar & Media
+                Nyheter
               </Link>
+              <Link
+                href="/investerare"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`p-4 rounded-2xl text-lg font-bold transition-all flex items-center gap-4 ${pathname.startsWith("/investerare") ? "bg-brand-light text-brand-teal" : "text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-800"}`}
+              >
+                Investerare
+              </Link>
+              <button
+                onClick={() => { setShowContactModal(true); setIsMobileMenuOpen(false); }}
+                className={`p-4 rounded-2xl text-lg font-bold transition-all flex items-center gap-4 text-left ${showContactModal ? "bg-brand-light text-brand-teal" : "text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-800"}`}
+              >
+                Kontakt
+              </button>
             </div>
-            
+
             <div className="pt-6 border-t border-gray-100 dark:border-slate-800 flex flex-col space-y-4">
               {isLoggedIn ? (
                 <button
@@ -193,15 +232,11 @@ export default function Navbar() {
               ) : (
                 <button
                   onClick={() => { setShowLoginModal(true); setLoginError(""); setIsMobileMenuOpen(false); }}
-                  className="w-full bg-brand-teal/10 text-brand-teal px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-left"
+                  className="w-full bg-brand-light text-brand-teal px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-left"
                 >
                   Logga in
                 </button>
               )}
-              
-              <button className="w-full bg-brand-teal text-white px-6 py-4 rounded-full font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-teal/20">
-                Investerare
-              </button>
             </div>
           </div>
         </div>
@@ -342,6 +377,13 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      <ContactModal
+        isOpen={showContactModal}
+        onClose={() => setShowContactModal(false)}
+        isLoggedIn={isLoggedIn}
+      />
     </>
+
   );
 }
